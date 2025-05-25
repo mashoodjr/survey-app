@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Results & Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .results-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .analytics-card {
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .analytics-card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem;
+            font-weight: 600;
+        }
+        .analytics-card-body {
+            padding: 1.5rem;
+        }
+        .rating-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .rating-1 { background: #ff6b6b; color: white; }
+        .rating-2 { background: #ffa534; color: white; }
+        .rating-3 { background: #ffd700; color: black; }
+        .rating-4 { background: #87ceeb; color: white; }
+        .rating-5 { background: #00c853; color: white; }
+        .chart-container {
+            min-height: 300px;
+            margin-bottom: 1.5rem;
+        }
+        .survey-card {
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .survey-card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem;
+        }
+        .survey-card-body {
+            padding: 1.5rem;
+        }
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+        }
+        .btn-primary {
+            background: #007bff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="results-container">
+            <div class="text-center mb-4">
+                <h1 class="mb-3">Survey Results & Analytics</h1>
+                <p class="text-muted">Total responses: {{ stats.total_responses }}</p>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card analytics-card">
+                        <div class="card-header analytics-card-header">
+                            <i class="fas fa-star me-2"></i>Rating Distribution
+                        </div>
+                        <div class="card-body analytics-card-body">
+                            <div id="ratingChart" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card analytics-card">
+                        <div class="card-header analytics-card-header">
+                            <i class="fas fa-users me-2"></i>Demographics
+                        </div>
+                        <div class="card-body analytics-card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div id="ageChart" class="chart-container"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div id="genderChart" class="chart-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Survey Responses Section -->
+            <div class="mt-5">
+                <h2 class="mb-4">Survey Responses</h2>
+                <div class="row">
+                    {% for survey in surveys %}
+                    <div class="col-12">
+                        <div class="card survey-card">
+                            <div class="card-header survey-card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-0">{{ survey.name }}</h5>
+                                        <small class="text-muted">
+                                            {{ survey.email }} • 
+                                            {{ survey.age_group }} • 
+                                            {{ survey.gender }} • 
+                                            {{ survey.experience }}
+                                        </small>
+                                    </div>
+                                    <div class="rating-badge rating-{{ survey.rating }}">
+                                        {{ survey.rating }}/5
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body survey-card-body">
+                                <p class="mb-0">"{{ survey.feedback }}"</p>
+                                <small class="text-muted d-block mt-2">
+                                    Submitted: {{ survey.created_at.strftime('%B %d, %Y %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('survey') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Take Another Survey
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        // Create rating distribution chart
+        const ratingData = [
+            {
+                x: ['1', '2', '3', '4', '5'],
+                y: [
+                    {{ stats.rating_distribution['1']|default(0) }},
+                    {{ stats.rating_distribution['2']|default(0) }},
+                    {{ stats.rating_distribution['3']|default(0) }},
+                    {{ stats.rating_distribution['4']|default(0) }},
+                    {{ stats.rating_distribution['5']|default(0) }}
+                ],
+                type: 'bar',
+                name: 'Ratings'
+            }
+        ];
+        
+        const ratingLayout = {
+            title: 'Rating Distribution',
+            xaxis: {
+                title: 'Rating'
+            },
+            yaxis: {
+                title: 'Number of Responses'
+            },
+            margin: {
+                t: 40,
+                b: 60,
+                l: 60,
+                r: 20
+            }
+        };
+        
+        Plotly.newPlot('ratingChart', ratingData, ratingLayout);
+
+        // Create age distribution chart
+        const ageData = [
+            {
+                x: ['18-24', '25-34', '35-44', '45-54', '55+'],
+                y: [
+                    {{ stats.age_distribution['18-24']|default(0) }},
+                    {{ stats.age_distribution['25-34']|default(0) }},
+                    {{ stats.age_distribution['35-44']|default(0) }},
+                    {{ stats.age_distribution['45-54']|default(0) }},
+                    {{ stats.age_distribution['55+']|default(0) }}
+                ],
+                type: 'bar',
+                name: 'Age Groups'
+            }
+        ];
+        
+        const ageLayout = {
+            title: 'Age Distribution',
+            xaxis: {
+                title: 'Age Group'
+            },
+            yaxis: {
+                title: 'Number of Responses'
+            },
+            margin: {
+                t: 40,
+                b: 60,
+                l: 60,
+                r: 20
+            }
+        };
+        
+        Plotly.newPlot('ageChart', ageData, ageLayout);
+
+        // Create gender distribution chart
+        const genderData = [
+            {
+                x: ['Male', 'Female', 'Other', 'Prefer not to say'],
+                y: [
+                    {{ stats.gender_distribution['male']|default(0) }},
+                    {{ stats.gender_distribution['female']|default(0) }},
+                    {{ stats.gender_distribution['other']|default(0) }},
+                    {{ stats.gender_distribution['prefer_not_to_say']|default(0) }}
+                ],
+                type: 'bar',
+                name: 'Gender'
+            }
+        ];
+        
+        const genderLayout = {
+            title: 'Gender Distribution',
+            xaxis: {
+                title: 'Gender'
+            },
+            yaxis: {
+                title: 'Number of Responses'
+            },
+            margin: {
+                t: 40,
+                b: 60,
+                l: 60,
+                r: 20
+            }
+        };
+        
+        Plotly.newPlot('genderChart', genderData, genderLayout);
+    </script>
+</body>
+</html>
