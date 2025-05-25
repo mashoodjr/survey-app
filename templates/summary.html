@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .summary-container {
+        .survey-container {
             max-width: 800px;
             margin: 2rem auto;
             padding: 2rem;
@@ -15,91 +15,178 @@
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
-        .summary-item {
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-        }
-        .summary-item:last-child {
-            border-bottom: none;
-        }
-        .summary-item h5 {
-            margin-bottom: 0.5rem;
+        .form-label {
+            font-weight: 600;
             color: #333;
         }
-        .summary-item p {
-            margin-bottom: 0;
-            color: #666;
-        }
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-        .btn {
-            padding: 0.75rem 2rem;
+        .form-control {
             border-radius: 8px;
+            padding: 0.75rem;
         }
         .btn-primary {
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
             background: #007bff;
-            border: none;
-        }
-        .btn-secondary {
-            background: #6c757d;
             border: none;
         }
         .btn-primary:hover {
             background: #0056b3;
         }
-        .btn-secondary:hover {
-            background: #5a6268;
+        .rating-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: #e9ecef;
+            color: #6c757d;
+            font-weight: 600;
+        }
+        .rating-badge.rating-1 {
+            background: #ff6b6b;
+            color: white;
+        }
+        .rating-badge.rating-2 {
+            background: #ff9f43;
+            color: white;
+        }
+        .rating-badge.rating-3 {
+            background: #ffd600;
+            color: black;
+        }
+        .rating-badge.rating-4 {
+            background: #43b581;
+            color: white;
+        }
+        .rating-badge.rating-5 {
+            background: #2ecc71;
+            color: white;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-item h5 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="summary-container">
+        <div class="survey-container">
             <div class="text-center mb-4">
                 <h1 class="mb-3">Survey Summary</h1>
                 <p class="text-muted">Please review your responses before submitting</p>
             </div>
 
-            <div class="summary-item">
-                <h5>Personal Information</h5>
-                <p><strong>Name:</strong> {{ data.name }}</p>
-                <p><strong>Email:</strong> {{ data.email }}</p>
-            </div>
+            <form method="POST" action="{{ url_for('summary') }}" id="summaryForm">
+                {{ form.hidden_tag() }}
+                
+                <!-- Hidden fields for form data -->
+                <input type="hidden" name="name" value="{{ session_data['name'] }}">
+                <input type="hidden" name="email" value="{{ session_data['email'] }}">
+                <input type="hidden" name="age_group" value="{{ session_data['age_group'] }}">
+                <input type="hidden" name="gender" value="{{ session_data['gender'] }}">
+                <input type="hidden" name="experience" value="{{ session_data['experience'] }}">
+                <input type="hidden" name="rating" value="{{ session_data['rating'] }}">
+                <input type="hidden" name="feedback" value="{{ session_data['feedback'] }}">
 
-            <div class="summary-item">
-                <h5>Demographics</h5>
-                <p><strong>Age Group:</strong> {{ data.age_group }}</p>
-                <p><strong>Gender:</strong> {{ data.gender }}</p>
-            </div>
-
-            <div class="summary-item">
-                <h5>Experience</h5>
-                <p><strong>Usage Frequency:</strong> {{ data.experience }}</p>
-            </div>
-
-            <div class="summary-item">
-                <h5>Rating</h5>
-                <div class="rating-badge rating-{{ data.rating }}">
-                    {{ data.rating }}/5
+                <div class="summary-item">
+                    <h5>Personal Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" value="{{ session_data['name'] }}" readonly>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="{{ session_data['email'] }}" readonly>
+                    </div>
                 </div>
-            </div>
 
-            <div class="summary-item">
-                <h5>Feedback</h5>
-                <p>{{ data.feedback }}</p>
-            </div>
+                <div class="summary-item">
+                    <h5>Demographics</h5>
+                    <div class="form-group">
+                        <label class="form-label">Age Group</label>
+                        <input type="text" class="form-control" value="{{ session_data['age_group'] }}" readonly>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label">Gender</label>
+                        <input type="text" class="form-control" value="{{ session_data['gender'] }}" readonly>
+                    </div>
+                </div>
 
-            <div class="btn-group">
-                {{ form.back(class="btn btn-secondary") }}
-                {{ form.submit(class="btn btn-primary") }}
-            </div>
+                <div class="summary-item">
+                    <h5>Experience</h5>
+                    <div class="form-group">
+                        <label class="form-label">Usage Frequency</label>
+                        <input type="text" class="form-control" value="{{ session_data['experience'] }}" readonly>
+                    </div>
+                </div>
+
+                <div class="summary-item">
+                    <h5>Rating</h5>
+                    <div class="rating-badge rating-{{ session_data['rating'] }}">
+                        {{ session_data['rating'] }}/5
+                    </div>
+                </div>
+
+                <div class="summary-item">
+                    <h5>Feedback</h5>
+                    <div class="form-group">
+                        <label class="form-label">Feedback</label>
+                        <textarea class="form-control" readonly>{{ session_data['feedback'] }}</textarea>
+                    </div>
+                </div>
+
+                <div class="btn-group mt-4">
+                    <input type="submit" name="back_button" value="Back" class="btn btn-secondary">
+                    <input type="submit" name="submit_button" value="Submit" class="btn btn-primary">
+                    <input type="submit" name="save_draft_button" value="Save as Draft" class="btn btn-outline-primary">
+                </div>
+            </form>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle form submission
+            const form = document.getElementById('summaryForm');
+            
+            // Handle button clicks
+            form.addEventListener('submit', function(e) {
+                const submitter = e.submitter;
+                
+                // Handle different button actions
+                if (submitter.name === 'submit_button') {
+                    if (!confirm('Are you sure you want to submit your survey?')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    // Allow form submission if confirmed
+                    return;
+                } else if (submitter.name === 'save_draft_button') {
+                    if (!confirm('Are you sure you want to save this as a draft?')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    // Allow form submission if confirmed
+                    return;
+                } else if (submitter.name === 'back_button') {
+                    e.preventDefault();
+                    window.history.back();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

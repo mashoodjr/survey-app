@@ -224,38 +224,43 @@
                 <div class="d-flex justify-content-between mt-4">
                     {{ form.save_draft(class="btn btn-outline-primary") }}
                     {{ form.skip(class="btn btn-outline-secondary") }}
-                    {{ form.submit(class="btn btn-primary") }}
                 </div>
             </form>
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary" form="surveyForm">
+                    <i class="fas fa-paper-plane me-2"></i>Submit Survey
+                </button>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Auto-save functionality
-            let saveTimeout;
-            const form = document.getElementById('surveyForm');
-            
-            // Add selected class to clicked button
-            button.classList.add('selected');
-            
-            // Update the hidden form field
-            document.getElementById('rating-field').value = button.dataset.value;
-        }
-
-        function selectRadio(button, value) {
-            // Remove selected class from all buttons
-            document.querySelectorAll('.radio-btn').forEach(btn => {
-                btn.classList.remove('selected');
+            // Add submit button click handler
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.addEventListener('click', function(e) {
+                const form = document.getElementById('surveyForm');
+                // Validate form before submission
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                    return;
+                }
             });
-            
-            // Add selected class to clicked button
-            button.classList.add('selected');
-            
-            // Update the hidden form field
-            document.querySelector('input[name="experience"]').value = value;
-        }
+
+            // Handle radio button selections
+            document.querySelectorAll('.btn-check').forEach(button => {
+                button.addEventListener('change', function() {
+                    // Update the hidden field when a radio button is selected
+                    const hiddenField = document.querySelector(`input[name="${this.name}"]`);
+                    if (hiddenField) {
+                        hiddenField.value = this.value;
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

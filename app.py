@@ -64,6 +64,37 @@ class SurveyForm(FlaskForm):
     skip = SubmitField('Skip Question')
 
 class SummaryForm(FlaskForm):
+    name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
+    email = StringField('Email Address', validators=[DataRequired(), Email()])
+    age_group = SelectField('Age Group', choices=[
+        ('18-24', '18-24'),
+        ('25-34', '25-34'),
+        ('35-44', '35-44'),
+        ('45-54', '45-54'),
+        ('55+', '55+')
+    ], validators=[DataRequired()])
+    gender = SelectField('Gender', choices=[
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+        ('prefer_not_to_say', 'Prefer not to say')
+    ], validators=[DataRequired()])
+    experience = RadioField('How often do you use our service?', choices=[
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+        ('occasionally', 'Occasionally'),
+        ('first_time', 'First time')
+    ], validators=[DataRequired()])
+    rating = SelectField('Overall Rating', choices=[
+        ('1', '1 - Very Poor'),
+        ('2', '2 - Poor'),
+        ('3', '3 - Average'),
+        ('4', '4 - Good'),
+        ('5', '5 - Excellent')
+    ], validators=[DataRequired()])
+    feedback = TextAreaField('Additional Feedback', validators=[DataRequired()], 
+                           render_kw={'rows': 5})
     submit = SubmitField('Submit')
     back = SubmitField('Back')
     save_draft = SubmitField('Save as Draft')
@@ -204,8 +235,8 @@ def survey():
             flash('Survey saved as draft. You can resume it later.', 'info')
             return redirect(url_for('survey'))
         else:
-            # Continue to summary
-            session_data = {
+            # Store data in session and continue to summary
+            session['survey_data'] = {
                 'name': form.name.data,
                 'email': form.email.data,
                 'age_group': form.age_group.data,
@@ -214,62 +245,120 @@ def survey():
                 'rating': form.rating.data,
                 'feedback': form.feedback.data
             }
-            return redirect(url_for('summary', data=json.dumps(session_data)))
+            return redirect(url_for('summary'))
 
     return render_template('survey.html', form=form)
 
 @app.route('/summary', methods=['GET', 'POST'])
 def summary():
-    data = request.args.get('data')
-    if not data:
+    # Get data from session
+    session_data = session.get('survey_data')
+    if not session_data:
         flash('Please complete the survey first!', 'error')
         return redirect(url_for('survey'))
 
-    session_data = json.loads(data)
     form = SummaryForm()
     
-    if form.validate_on_submit():
-        if form.submit.data:
+    # Handle form submission
+    if request.method == 'POST':
+        print(f"Form data received: {request.form}")  # Debug: Print form data
+        
+        # Get the button that was clicked
+        submit_button = request.form.get('submit_button')
+        back_button = request.form.get('back_button')
+        save_draft_button = request.form.get('save_draft_button')
+        
+        if submit_button:
+            print(f"Submit button clicked")  # Debug: Button click
             # Save complete survey
-            new_survey = Survey(
-                name=session_data['name'],
-                email=session_data['email'],
-                age_group=session_data['age_group'],
-                gender=session_data['gender'],
-                experience=session_data['experience'],
-                rating=session_data['rating'],
-                feedback=session_data['feedback']
-            )
-            db.session.add(new_survey)
-            db.session.commit()
-            flash('Thank you for your feedback!', 'success')
-            return redirect(url_for('thank_you'))
-        elif form.back.data:
+            try:
+                print(f"Form data: {dict(request.form)}")  # Debug: Full form data
+                print(f"Creating new survey record")  # Debug: Creating record
+                new_survey = Survey(
+                    name=request.form.get('name'),
+                    email=request.form.get('email'),
+                    age_group=request.form.get('age_group'),
+                    gender=request.form.get('gender'),
+                    experience=request.form.get('experience'),
+                    rating=int(request.form.get('rating')),  # Convert rating to integer
+                    feedback=request.form.get('feedback')
+                )
+                print(f"Adding survey to session")  # Debug: Adding to session
+                db.session.add(new_survey)
+                print(f"Committing transaction")  # Debug: Committing
+                db.session.commit()
+                print(f"Transaction committed")  # Debug: Transaction success
+                flash('Thank you for your feedback!', 'success')
+                print(f"Redirecting to thank_you")  # Debug: Redirecting
+                # Clear session data after successful submission
+                session.pop('survey_data', None)
+                # Clear any remaining session data
+                session.clear()
+                return redirect(url_for('thank_you'))
+            except Exception as e:
+                print(f"Error occurred: {str(e)}")  # Debug: Error
+                db.session.rollback()
+                flash('An error occurred while saving your survey. Please try again.', 'error')
+                return redirect(url_for('summary'))
+        elif back_button:
+            print(f"Back button clicked")  # Debug: Back button
             return redirect(url_for('survey'))
-        elif form.save_draft.data:
+        elif save_draft_button:
+            print(f"Save draft button clicked")  # Debug: Save draft
             # Save as draft
-            draft = Survey(
-                name=session_data['name'],
-                email=session_data['email'],
-                age_group=session_data['age_group'],
-                gender=session_data['gender'],
-                experience=session_data['experience'],
-                rating=session_data['rating'],
-                feedback=session_data['feedback'],
-                is_draft=True,
-                draft_id=str(datetime.datetime.now().timestamp())
-            )
-            db.session.add(draft)
-            db.session.commit()
-            session['draft_id'] = draft.draft_id
-            flash('Survey saved as draft. You can resume it later.', 'info')
+            try:
+                draft = Survey(
+                    name=request.form.get('name'),
+                    email=request.form.get('email'),
+                    age_group=request.form.get('age_group'),
+                    gender=request.form.get('gender'),
+                    experience=request.form.get('experience'),
+                    rating=int(request.form.get('rating')),  # Convert rating to integer
+                    feedback=request.form.get('feedback'),
+                    is_draft=True,
+                    draft_id=str(datetime.datetime.now().timestamp())
+                )
+                db.session.add(draft)
+                db.session.commit()
+                session['draft_id'] = draft.draft_id
+                flash('Survey saved as draft. You can resume it later.', 'info')
+                return redirect(url_for('survey'))
+            except Exception as e:
+                print(f"Error saving draft: {str(e)}")  # Debug: Draft error
+                db.session.rollback()
+                flash('An error occurred while saving draft. Please try again.', 'error')
+                return redirect(url_for('summary'))
+        else:
+            # If no button was clicked, just redirect to survey
+            print(f"No button clicked")  # Debug: No button
             return redirect(url_for('survey'))
-
-    return render_template('summary.html', form=form, data=session_data)
+    else:
+        print(f"GET request, pre-filling form")  # Debug: GET request
+    
+    # Pre-fill the form with session data
+    form.name.data = session_data['name']
+    form.email.data = session_data['email']
+    form.age_group.data = session_data['age_group']
+    form.gender.data = session_data['gender']
+    form.experience.data = session_data['experience']
+    form.rating.data = session_data['rating']
+    form.feedback.data = session_data['feedback']
+    
+    # Pass session data directly to template
+    return render_template('summary.html', form=form, session_data=session_data)
 
 @app.route('/thank-you')
 def thank_you():
-    return render_template('thank_you.html')
+    # Clear any remaining session data
+    session.clear()
+    
+    # Get the latest survey statistics
+    stats = get_survey_statistics()
+    
+    # Debug: Print thank you page access
+    print("Accessing thank you page")
+    
+    return render_template('thank_you.html', stats=stats)
 
 @app.route('/results')
 def results():
@@ -294,25 +383,7 @@ def validate_email():
     
     return jsonify({'valid': True})
 
-@app.route('/api/save-progress', methods=['POST'])
-def save_progress():
-    data = request.json
-    draft_id = session.get('draft_id')
-    
-    if draft_id:
-        draft = Survey.query.filter_by(draft_id=draft_id, is_draft=True).first()
-        if draft:
-            draft.name = data.get('name', draft.name)
-            draft.email = data.get('email', draft.email)
-            draft.age_group = data.get('age_group', draft.age_group)
-            draft.gender = data.get('gender', draft.gender)
-            draft.experience = data.get('experience', draft.experience)
-            draft.rating = data.get('rating', draft.rating)
-            draft.feedback = data.get('feedback', draft.feedback)
-            db.session.commit()
-            return jsonify({'success': True})
-    
-    return jsonify({'success': False, 'message': 'No draft found'}), 404
+
 
 if __name__ == '__main__':
     with app.app_context():
