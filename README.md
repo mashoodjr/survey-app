@@ -37,5 +37,5 @@ python app.py
 - Flash messages for user feedback
 
 
-# Authors
+## Authors
 - [Samuel Niwagila](https://github.com/mashoodjr)
