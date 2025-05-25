@@ -35,3 +35,7 @@ python app.py
 - Results page showing all submitted surveys
 - Bootstrap styling for a modern look
 - Flash messages for user feedback
+
+
+# Authors
+- [Samuel Niwagila](https://github.com/mashoodjr)
